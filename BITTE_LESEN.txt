@@ -1,0 +1,9 @@
+AktivFoto iPhone PWA V5
+
+Diese ZIP-Datei enthaelt die fertigen Web-App-Dateien fuer einen HTTPS-Webserver.
+
+Zur Installation muessen alle Dateien gemeinsam in einen eigenen Unterordner (z.B. /aktivfoto/) auf dem Server geladen werden. Danach auf dem iPhone die HTTPS-Adresse in Safari oeffnen und Teilen > Zum Home-Bildschirm waehlen.
+
+WICHTIG: Noch NICHT auf STRATO veroeffentlicht. Kein Serverzugang enthalten. Keine Cloud-Synchronisierung aktiviert. Fotos bleiben lokal im jeweiligen Browser gespeichert. Bestehenden STRATO-Upload NICHT benutzen: er erzeugt DNP-Druckauftraege.
+
+Bestehende PC-Programme und Druckbruecke werden nicht veraendert.
