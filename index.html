@@ -15,7 +15,7 @@ $('event').value=localStorage.getItem('aktivfoto-event')||''; $('nummer').value=
 $('capture').onchange=async e=>{const files=[...e.target.files];if(!files.length)return;let saved=0;for(const f of files){if(!f.type.startsWith('image/'))continue;try{await store('readwrite',{id:crypto.randomUUID?crypto.randomUUID():String(Date.now())+'-'+Math.random(),event:$('event').value.trim(),nummer:$('nummer').value.trim(),time:Date.now(),file:f});saved++}catch(err){$('status').textContent='Speichern fehlgeschlagen: '+err.message;return}}$('status').textContent=saved+' Foto(s) lokal gespeichert.';$('capture').value='';await updateStorage();if(cloudToken)syncCloud()};
 // Separater STRATO-Fotospeicher; der Druck-Endpunkt wird niemals angesprochen.
 const CLOUD_URL='https://fotos.timeoutscene.de/mobile/api/mobile/photos';
-let cloudToken=sessionStorage.getItem('aktivfoto-cloud-token')||'';
+let cloudToken=localStorage.getItem('aktivfoto-cloud-token')||'';
 let syncing=false;
 $('cloudToken').value=cloudToken;
 function cloudMessage(message){$('cloudStatus').textContent=message+' · kein automatischer Druck'}
@@ -43,11 +43,8 @@ async function syncCloud(){
    for(let offset=0;offset<view.length;offset+=32768){
     binary+=String.fromCharCode(...view.subarray(offset,offset+32768));
    }
-   const body=new FormData();
-   body.append('foto',item.file,'foto'+(suffix.startsWith('.')?suffix:'.'+suffix));
-   body.append('event',item.event||'');
-   body.append('start_number',item.nummer||'');
-   const response=await fetch(CLOUD_URL,{method:'POST',headers:{Authorization:'Bearer '+cloudToken},body,cache:'no-store'});
+   const body=JSON.stringify({extension:suffix,event:item.event||'',start_number:item.nummer||'',image_base64:btoa(binary)});
+   const response=await fetch(CLOUD_URL,{method:'POST',headers:{Authorization:'Bearer '+cloudToken,'Content-Type':'application/json'},body,cache:'no-store'});
    let data={};try{data=await response.json()}catch(_){}
    if(!response.ok||!data.id){throw new Error(response.status===401?'Cloud-Schlüssel ungültig':(data.error||'Serverfehler '+response.status))}
    item.cloudId=data.id;
@@ -62,7 +59,7 @@ $('cloudConnect').onclick=()=>{
  const key=$('cloudToken').value.trim();
  if(!key){cloudMessage('Bitte Cloud-Schlüssel eingeben');return}
  cloudToken=key;
- sessionStorage.setItem('aktivfoto-cloud-token',key);
+ localStorage.setItem('aktivfoto-cloud-token',key);
  syncCloud();
 };
 $('cloudSync').onclick=()=>syncCloud();
