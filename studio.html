@@ -208,8 +208,11 @@ el('studioUpload').onclick=async()=>{
  try{
   const f=await makeFile();const token=el('cloudToken').value.trim();if(!token)throw Error('Bitte im Bereich Cloud-Einstellungen zuerst den privaten Cloud-Schlüssel eingeben.');
   const binary=await f.arrayBuffer();let s='';const bytes=new Uint8Array(binary);for(let i=0;i<bytes.length;i++)s+=String.fromCharCode(bytes[i]);
-  const body=JSON.stringify({extension:'jpg',event:el('studioEvent').value.trim(),start_number:el('studioNumber').value.trim(),image_base64:btoa(s)});
-  const response=await fetch('https://fotos.timeoutscene.de/mobile/api/mobile/photos',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body,cache:'no-store'});
+  const body=new FormData();
+  body.append('foto',f,f.name);
+  body.append('event',el('studioEvent').value.trim());
+  body.append('start_number',el('studioNumber').value.trim());
+  const response=await fetch('https://fotos.timeoutscene.de/mobile/api/mobile/photos',{method:'POST',headers:{Authorization:'Bearer '+token},body,cache:'no-store'});
   if(!response.ok)throw Error('STRATO antwortet mit HTTP '+response.status);
   setStatus('Fertigbild an STRATO übertragen. Kein Druckauftrag wurde ausgelöst.');
  }catch(e){setStatus('STRATO-Übertragung fehlgeschlagen: '+e.message)}
