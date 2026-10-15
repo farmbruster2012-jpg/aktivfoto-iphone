@@ -93,8 +93,11 @@ async function syncCloud(){
    for(let offset=0;offset<view.length;offset+=32768){
     binary+=String.fromCharCode(...view.subarray(offset,offset+32768));
    }
-   const body=JSON.stringify({extension:suffix,event:item.event||'',start_number:item.nummer||'',image_base64:btoa(binary)});
-   const response=await fetch(CLOUD_URL,{method:'POST',headers:{Authorization:'Bearer '+cloudToken,'Content-Type':'application/json'},body,cache:'no-store'});
+   const body=new FormData();
+   body.append('foto',item.file,'foto'+(suffix.startsWith('.')?suffix:'.'+suffix));
+   body.append('event',item.event||'');
+   body.append('start_number',item.nummer||'');
+   const response=await fetch(CLOUD_URL,{method:'POST',headers:{Authorization:'Bearer '+cloudToken},body,cache:'no-store'});
    let data={};try{data=await response.json()}catch(_){}
    if(!response.ok||!data.id){throw new Error(response.status===401?'Cloud-Schlüssel ungültig':(data.error||'Serverfehler '+response.status))}
    item.cloudId=data.id;
