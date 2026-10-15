@@ -15,7 +15,7 @@ $('event').value=localStorage.getItem('aktivfoto-event')||''; $('nummer').value=
 $('capture').onchange=async e=>{const files=[...e.target.files];if(!files.length)return;let saved=0;for(const f of files){if(!f.type.startsWith('image/'))continue;try{await store('readwrite',{id:crypto.randomUUID?crypto.randomUUID():String(Date.now())+'-'+Math.random(),event:$('event').value.trim(),nummer:$('nummer').value.trim(),time:Date.now(),file:f});saved++}catch(err){$('status').textContent='Speichern fehlgeschlagen: '+err.message;return}}$('status').textContent=saved+' Foto(s) lokal gespeichert.';$('capture').value='';await updateStorage();if(cloudToken)syncCloud()};
 // Separater STRATO-Fotospeicher; der Druck-Endpunkt wird niemals angesprochen.
 const CLOUD_URL='https://fotos.timeoutscene.de/mobile/api/mobile/photos';
-let cloudToken=localStorage.getItem('aktivfoto-cloud-token')||'';
+let cloudToken=sessionStorage.getItem('aktivfoto-cloud-token')||'';
 let syncing=false;
 $('cloudToken').value=cloudToken;
 function cloudMessage(message){$('cloudStatus').textContent=message+' · kein automatischer Druck'}
@@ -59,7 +59,7 @@ $('cloudConnect').onclick=()=>{
  const key=$('cloudToken').value.trim();
  if(!key){cloudMessage('Bitte Cloud-Schlüssel eingeben');return}
  cloudToken=key;
- localStorage.setItem('aktivfoto-cloud-token',key);
+ sessionStorage.setItem('aktivfoto-cloud-token',key);
  syncCloud();
 };
 $('cloudSync').onclick=()=>syncCloud();
