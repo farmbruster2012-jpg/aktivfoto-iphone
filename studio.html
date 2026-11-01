@@ -47,9 +47,21 @@
     <button id="studioDownload">JPG herunterladen</button>
     <button id="studioShare">Teilen</button>
     <button id="studioUpload">Zu STRATO übertragen</button>
+    <button id="studioPrintPreview" style="background:#176f69;color:white">🖨️ Druckvorschau</button>
+  </div>
+  <div id="studioPrintDialog" hidden style="background:#101319;border:2px solid #176f69;border-radius:14px;padding:14px;margin-top:14px">
+    <h3 style="margin:0 0 8px">Druckvorschau · DNP DS620</h3>
+    <img id="studioPrintImage" alt="Vorschau des fertigen Layout-JPG" style="display:block;width:100%;max-height:55vh;object-fit:contain;background:#292d35;border-radius:8px">
+    <p class="muted">Dies ist das fertige Layout-JPG. Nur „Jetzt drucken“ erzeugt einen Druckauftrag bei EVENTFOTO CLOUD. Danach übernimmt der DNP DS620 automatisch.</p>
+    <div class="actions">
+      <button id="studioPrintSend" style="background:#147d52;color:white">🖨️ Jetzt drucken · 1 Auftrag</button>
+      <button id="studioPrintClose">Vorschau schließen</button>
+    </div>
+    <p id="studioPrintStatus" class="muted" role="status">Noch kein Druckauftrag ausgelöst.</p>
+    <p class="small">Nach dem Tippen wird die STRATO-Druckseite geöffnet. Bei Erfolg zeigt sie „Druckauftrag angelegt“. Mit „Zurück“ kommst du zum Studio.</p>
   </div>
   <p id="studioStatus" class="muted" role="status">Bitte zuerst ein Foto auswählen.</p>
-  <p class="small">Hinweis: Das fertige Motiv wird als neues Foto gespeichert. Das Original bleibt erhalten. Drucken erfolgt weiterhin am PC.</p>
+  <p class="small">Hinweis: Originalfotos bleiben erhalten. Der Druckbutton sendet ausschließlich das angezeigte Fertigbild an die vorhandene EventFoto-Cloud.</p>
 </div>
 </section>
 </main>
@@ -204,6 +216,55 @@ el('studioSave').onclick=async()=>{
 };
 el('studioDownload').onclick=async()=>{try{const f=await makeFile();const u=URL.createObjectURL(f),a=document.createElement('a');a.href=u;a.download=f.name;a.click();setTimeout(()=>URL.revokeObjectURL(u),2000);setStatus('JPG zum Herunterladen bereit.')}catch(e){setStatus(e.message)}};
 el('studioShare').onclick=async()=>{try{const f=await makeFile();if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'AktivFoto Studio'});setStatus('Teilen-Menü geöffnet.')}else{el('studioDownload').click();setStatus('Teilen mit Datei wird nicht unterstützt; JPG wird heruntergeladen.')}}catch(e){if(e.name!=='AbortError')setStatus('Teilen nicht möglich: '+e.message)}};
+// Fertigbild-Vorschau und bewusst ausgelöster POST an die vorhandene EventFoto-Cloud.
+let studioPrintObjectURL=null;
+let studioPrintFile=null;
+let studioPrintSubmitting=false;
+el('studioPrintPreview').onclick=async()=>{
+ try{
+  const f=await makeFile();
+  studioPrintFile=f;
+  if(studioPrintObjectURL)URL.revokeObjectURL(studioPrintObjectURL);
+  studioPrintObjectURL=URL.createObjectURL(f);
+  el('studioPrintImage').src=studioPrintObjectURL;
+  el('studioPrintDialog').hidden=false;
+  el('studioPrintStatus').textContent='Vorschau bereit. Erst „Jetzt drucken“ erzeugt einen Druckauftrag.';
+  setStatus('Druckvorschau geöffnet – es wurde nichts gedruckt.');
+ }catch(e){setStatus('Druckvorschau fehlgeschlagen: '+e.message)}
+};
+el('studioPrintClose').onclick=()=>{
+ el('studioPrintDialog').hidden=true;
+ studioPrintFile=null;
+ el('studioPrintImage').removeAttribute('src');
+ if(studioPrintObjectURL)URL.revokeObjectURL(studioPrintObjectURL);
+ studioPrintObjectURL=null;
+};
+// Standard-HTML-Formular statt fetch: Domain-übergreifender Upload ohne CORS.
+// Das Ziel ist der auf STRATO geprüfte POST / mit multipart-Feld "foto".
+el('studioPrintSend').onclick=()=>{
+ if(studioPrintSubmitting)return;
+ try{
+  if(!studioPrintFile)throw Error('Bitte zuerst die Druckvorschau öffnen.');
+  if(typeof DataTransfer==='undefined')throw Error('Dieser Browser unterstützt die Dateiübergabe nicht.');
+  const dt=new DataTransfer();dt.items.add(studioPrintFile);
+  const form=document.createElement('form');
+  form.method='POST';form.action='https://fotos.timeoutscene.de/';
+  form.enctype='multipart/form-data';form.target='_self';
+  form.style.display='none';
+  const fileInput=document.createElement('input');fileInput.type='file';fileInput.name='foto';
+  fileInput.files=dt.files;
+  if(fileInput.files.length!==1)throw Error('Das fertige JPG konnte nicht in das Druckformular übernommen werden.');
+  form.appendChild(fileInput);document.body.appendChild(form);
+  studioPrintSubmitting=true;
+  el('studioPrintSend').disabled=true;
+  el('studioPrintStatus').textContent='Fertigbild wird an EVENTFOTO CLOUD gesendet. Bitte auf der nächsten Seite „Druckauftrag angelegt“ prüfen.';
+  form.submit();
+ }catch(e){
+  studioPrintSubmitting=false;
+  el('studioPrintSend').disabled=false;
+  el('studioPrintStatus').textContent='Druck nicht gesendet: '+e.message;
+ }
+};
 el('studioUpload').onclick=async()=>{
  try{
   const f=await makeFile();const token=el('cloudToken').value.trim();if(!token)throw Error('Bitte im Bereich Cloud-Einstellungen zuerst den privaten Cloud-Schlüssel eingeben.');
