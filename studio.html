@@ -14,7 +14,7 @@
 <section id="fotos" hidden><div class="panel"><label for="search">Fotos suchen (Event oder Startnummer)</label><input id="search" placeholder="Suchbegriff"><p id="count" class="muted"></p><div class="actions"><button id="backup">Fotos als Sicherung herunterladen</button><button id="metadata">Fotoliste exportieren</button></div><p class="muted">„E-Mail / WhatsApp“ öffnet auf unterstützten iPhones das Teilen-Menü mit dem Foto als Anhang. Dort Mail oder WhatsApp wählen. Fotosicherung speichert Bilder einzeln. Die Fotoliste enthält Event, Startnummer und Datum (keine Bilddaten). Wichtig: Browserdaten nicht löschen, bevor die Bilder extern gesichert sind.</p><div id="grid" class="grid"></div></div></section>
 <section id="studio" hidden>
 <div id="studioPanel">
-  <h2 style="margin-top:0">AktivFoto Studio · iPhone</h2>
+  <h2 style="margin-top:0">AktivFoto Studio · iPhone Premium</h2>
   <p class="muted">Foto gestalten, Layout wählen, Texte ergänzen und als neues JPG speichern. Die bestehende Fotoablage und STRATO-Verbindung bleiben erhalten.</p>
   <div class="actions">
     <button id="studioChoosePhoto">📷 Foto auswählen</button>
@@ -23,6 +23,19 @@
   </div>
   <input id="studioPhotoFile" type="file" accept="image/*" hidden>
   <input id="studioLogoFile" type="file" accept="image/png,image/webp,image/*" hidden>
+  <div class="panel" id="premiumPanel" style="background:#252932;border:1px solid #66502e">
+    <h3 style="margin:0 0 8px">✨ Premium-Vorlagen · 68 Designs</h3>
+    <p class="small">Alle 64 Studio-Designs und 4 KI-Vorlagen. Die bisherigen 6 iPhone-Layouts bleiben zusätzlich erhalten.</p>
+    <div class="fields">
+      <div><label for="premiumCategory">Kategorie</label><select id="premiumCategory"><option value="">Alle Kategorien</option></select></div>
+      <div><label for="premiumTemplate">Vorlage</label><select id="premiumTemplate"><option value="">Bisheriges iPhone-Studio</option></select></div>
+      <div><label for="premiumCount">Fotofelder</label><select id="premiumCount"><option value="1">1 Foto</option><option value="2" selected>2 Fotos</option><option value="3">3 Fotos</option><option value="4">4 Fotos</option></select></div>
+      <div><label for="premiumArrangement">Fotofeld-Anordnung</label><select id="premiumArrangement"><option>Klassisch</option><option>Dynamisch versetzt</option><option>Hauptfoto + Detail</option><option>Asymmetrische Collage</option><option>Fine Art Bogen</option><option>Oval & Editorial</option></select></div>
+    </div>
+    <div id="premiumPhotoButtons" class="actions" style="margin-top:12px"></div>
+    <input id="premiumPhotos" type="file" accept="image/*" multiple hidden>
+    <p id="premiumInfo" class="small">Vorlage auswählen. Die Fotos bleiben auf deinem Gerät, bis du ausdrücklich speicherst oder überträgst.</p>
+  </div>
   <div class="fields">
     <div><label for="studioLayout">Layout</label><select id="studioLayout">
       <option value="">Ohne Layout</option>
@@ -169,6 +182,7 @@ function readImage(file){return new Promise((resolve,reject)=>{const u=URL.creat
 function containImage(im,w,h){const r=Math.min(w/im.width,h/im.height);return {w:im.width*r,h:im.height*r}}
 function drawStudio(){
   const W=1200,H=1800;canvas.width=W;canvas.height=H;ctx.clearRect(0,0,W,H);
+  if(el('premiumTemplate').value){drawPremiumStudio();return;}
   ctx.fillStyle='#20242b';ctx.fillRect(0,0,W,H);
   if(!baseImage){ctx.fillStyle='#fff';ctx.font='bold 42px sans-serif';ctx.textAlign='center';ctx.fillText('AktivFoto Studio',W/2,H/2-30);ctx.font='28px sans-serif';ctx.fillText('Bitte Foto auswählen',W/2,H/2+25);return}
   // Hochformat-Layout mit weichem, vollflächigem Hintergrund und vollständigem Foto.
@@ -202,7 +216,7 @@ el('studioLogoFile').onchange=async e=>{const f=e.target.files&&e.target.files[0
 ['studioLayout','studioScale','studioEvent','studioExtra','studioPerson','studioNumber','studioDate','studioFont'].forEach(id=>el(id).addEventListener('input',drawSafe));
 el('studioReset').onclick=()=>{baseImage=null;logoImage=null;el('studioPhotoFile').value='';el('studioLogoFile').value='';drawSafe();setStatus('Zurückgesetzt. Originalfotos bleiben erhalten.')};
 async function makeFile(){
- if(!baseImage)throw Error('Bitte zuerst ein Foto auswählen.');
+ if(!baseImage && !el('premiumTemplate').value)throw Error('Bitte zuerst ein Foto auswählen.');
  const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',.92));if(!blob)throw Error('JPG konnte nicht erstellt werden.');
  savedBlob=blob;savedFile=new File([blob],`AktivFoto_Studio_${Date.now()}.jpg`,{type:'image/jpeg'});
  return savedFile;
@@ -280,6 +294,121 @@ el('studioUpload').onclick=async()=>{
 };
 try{const old=JSON.parse(localStorage.getItem(stateKey)||'{}');for(const k of ['studioEvent','studioExtra','studioPerson','studioNumber','studioDate','studioFont'])if(old[k]!==undefined)el(k).value=old[k]}catch{}
 ['studioEvent','studioExtra','studioPerson','studioNumber','studioDate','studioFont','studioLayout'].forEach(id=>el(id).addEventListener('change',()=>{const o={};['studioEvent','studioExtra','studioPerson','studioNumber','studioDate','studioFont','studioLayout'].forEach(k=>o[k]=el(k).value);localStorage.setItem(stateKey,JSON.stringify(o))}));
+
+// Premium-Katalog: Bilder sind separate Dateien, nicht im HTML eingebettet.
+const premiumCatalog=[{"name":"Rosé Royale","category":"Hochzeit & Liebe","src":"premium_assets/design_00.webp","dark":false},{"name":"Botanical Gold","category":"Hochzeit & Liebe","src":"premium_assets/design_01.webp","dark":false},{"name":"Blossom Dream","category":"Hochzeit & Liebe","src":"premium_assets/design_02.webp","dark":false},{"name":"Eucalyptus Elegance","category":"Hochzeit & Liebe","src":"premium_assets/design_03.webp","dark":false},{"name":"Blue Magnolia","category":"Hochzeit & Liebe","src":"premium_assets/design_04.webp","dark":false},{"name":"Ruby Roses","category":"Hochzeit & Liebe","src":"premium_assets/design_05.webp","dark":false},{"name":"Champagne Vows","category":"Hochzeit & Liebe","src":"premium_assets/design_06.webp","dark":false},{"name":"Moonlit Romance","category":"Hochzeit & Liebe","src":"premium_assets/design_07.webp","dark":true},{"name":"Birthday Glam","category":"Geburtstag","src":"premium_assets/design_08.webp","dark":true},{"name":"Golden Birthday","category":"Geburtstag","src":"premium_assets/design_09.webp","dark":false},{"name":"Pink Celebration","category":"Geburtstag","src":"premium_assets/design_10.webp","dark":false},{"name":"Midnight Birthday","category":"Geburtstag","src":"premium_assets/design_11.webp","dark":true},{"name":"Blue Sparkle","category":"Geburtstag","src":"premium_assets/design_12.webp","dark":false},{"name":"Birthday Blush","category":"Geburtstag","src":"premium_assets/design_13.webp","dark":false},{"name":"Jubilee Gold","category":"Geburtstag","src":"premium_assets/design_14.webp","dark":false},{"name":"Celebration Lights","category":"Geburtstag","src":"premium_assets/design_15.webp","dark":true},{"name":"Golden Lights","category":"Party & Event","src":"premium_assets/design_16.webp","dark":true},{"name":"After Dark","category":"Party & Event","src":"premium_assets/design_17.webp","dark":true},{"name":"Velvet Night","category":"Party & Event","src":"premium_assets/design_18.webp","dark":false},{"name":"Burlesque Rouge","category":"Party & Event","src":"premium_assets/design_19.webp","dark":true},{"name":"Midnight Masquerade","category":"Party & Event","src":"premium_assets/design_20.webp","dark":true},{"name":"Cabaret Gold","category":"Party & Event","src":"premium_assets/design_21.webp","dark":false},{"name":"Neon Seduction","category":"Party & Event","src":"premium_assets/design_22.webp","dark":false},{"name":"Black Tie Party","category":"Party & Event","src":"premium_assets/design_23.webp","dark":true},{"name":"Gala Noir","category":"Firmenfeier & Gala","src":"premium_assets/design_24.webp","dark":true},{"name":"Golden Awards","category":"Firmenfeier & Gala","src":"premium_assets/design_25.webp","dark":false},{"name":"Executive Gold","category":"Firmenfeier & Gala","src":"premium_assets/design_26.webp","dark":true},{"name":"Midnight Gala","category":"Firmenfeier & Gala","src":"premium_assets/design_27.webp","dark":true},{"name":"Crystal Evening","category":"Firmenfeier & Gala","src":"premium_assets/design_28.webp","dark":false},{"name":"Corporate Blue","category":"Firmenfeier & Gala","src":"premium_assets/design_29.webp","dark":false},{"name":"Black Tie Gala","category":"Firmenfeier & Gala","src":"premium_assets/design_30.webp","dark":true},{"name":"Golden Reception","category":"Firmenfeier & Gala","src":"premium_assets/design_31.webp","dark":true},{"name":"Christmas Gold","category":"Weihnachten","src":"premium_assets/design_32.webp","dark":false},{"name":"Winter Rose","category":"Weihnachten","src":"premium_assets/design_33.webp","dark":false},{"name":"Noël Noir","category":"Weihnachten","src":"premium_assets/design_34.webp","dark":true},{"name":"Festive Lights","category":"Weihnachten","src":"premium_assets/design_35.webp","dark":true},{"name":"Snowfall Blue","category":"Weihnachten","src":"premium_assets/design_36.webp","dark":false},{"name":"Champagne Christmas","category":"Weihnachten","src":"premium_assets/design_37.webp","dark":false},{"name":"Winter Elegance","category":"Weihnachten","src":"premium_assets/design_38.webp","dark":false},{"name":"Golden Holiday","category":"Weihnachten","src":"premium_assets/design_39.webp","dark":false},{"name":"Midnight Vows","category":"Premium & Luxus","src":"premium_assets/design_40.webp","dark":true},{"name":"Marble Gold","category":"Premium & Luxus","src":"premium_assets/design_41.webp","dark":false},{"name":"Royal Velvet","category":"Premium & Luxus","src":"premium_assets/design_42.webp","dark":false},{"name":"Gold Couture","category":"Premium & Luxus","src":"premium_assets/design_43.webp","dark":true},{"name":"Champagne Luxury","category":"Premium & Luxus","src":"premium_assets/design_44.webp","dark":false},{"name":"Black Diamond","category":"Premium & Luxus","src":"premium_assets/design_45.webp","dark":true},{"name":"Luxury Rose","category":"Premium & Luxus","src":"premium_assets/design_46.webp","dark":false},{"name":"Golden Signature","category":"Premium & Luxus","src":"premium_assets/design_47.webp","dark":false},{"name":"Urban Gold","category":"Modern & Kreativ","src":"premium_assets/design_48.webp","dark":false},{"name":"Electric Blue","category":"Modern & Kreativ","src":"premium_assets/design_49.webp","dark":false},{"name":"Modern Blush","category":"Modern & Kreativ","src":"premium_assets/design_50.webp","dark":false},{"name":"Graphic Noir","category":"Modern & Kreativ","src":"premium_assets/design_51.webp","dark":true},{"name":"Neon Nights","category":"Modern & Kreativ","src":"premium_assets/design_52.webp","dark":true},{"name":"Creative Marble","category":"Modern & Kreativ","src":"premium_assets/design_53.webp","dark":false},{"name":"Color Pop","category":"Modern & Kreativ","src":"premium_assets/design_54.webp","dark":true},{"name":"Modern Sunset","category":"Modern & Kreativ","src":"premium_assets/design_55.webp","dark":false},{"name":"Fine Art Portrait","category":"Portrait & Akt","src":"premium_assets/design_56.webp","dark":true},{"name":"Boudoir Elegance","category":"Portrait & Akt","src":"premium_assets/design_57.webp","dark":true},{"name":"Noir Silhouette","category":"Portrait & Akt","src":"premium_assets/design_58.webp","dark":true},{"name":"Golden Silhouette","category":"Portrait & Akt","src":"premium_assets/design_59.webp","dark":true},{"name":"Red Velvet","category":"Portrait & Akt","src":"premium_assets/design_60.webp","dark":true},{"name":"Low-Key Studio","category":"Portrait & Akt","src":"premium_assets/design_61.webp","dark":true},{"name":"Soft Romance","category":"Portrait & Akt","src":"premium_assets/design_62.webp","dark":true},{"name":"Luxury Editorial","category":"Portrait & Akt","src":"premium_assets/design_63.webp","dark":true},{"name":"KI Gala · Velvet Noir","category":"KI-Vorlagen","src":"premium_assets/ki_01.webp","dark":true},{"name":"KI Hochzeit · Rosengold Deluxe","category":"KI-Vorlagen","src":"premium_assets/ki_02.webp","dark":true},{"name":"KI Geburtstag · Golden Celebration","category":"KI-Vorlagen","src":"premium_assets/ki_03.webp","dark":true},{"name":"KI Event · Neon Festival","category":"KI-Vorlagen","src":"premium_assets/ki_04.webp","dark":true}];
+const premiumImages=new Map();
+const premiumPhotos=[null,null,null,null];
+let premiumSelectedSlot=0;
+function premiumStatus(t){el('premiumInfo').textContent=t;}
+function premiumImage(url){
+ if(!premiumImages.has(url)){
+  const im=new Image();premiumImages.set(url,im);
+  im.onload=()=>{if(el('premiumTemplate').value)drawSafe();};
+  im.onerror=()=>premiumStatus('Vorlagenbild fehlt: '+url+' – bitte den Ordner premium_assets zusammen mit studio.html hochladen.');
+  im.src=url;
+ }
+ return premiumImages.get(url);
+}
+function refreshPremiumList(){
+ const cat=el('premiumCategory').value,select=el('premiumTemplate'),old=select.value;
+ select.replaceChildren(new Option('Bisheriges iPhone-Studio',''));
+ premiumCatalog.forEach((item,i)=>{if(!cat||item.category===cat)select.add(new Option(item.name,String(i)))});
+ if([...select.options].some(o=>o.value===old))select.value=old;
+ else select.value='';
+ drawSafe();
+}
+[...new Set(premiumCatalog.map(x=>x.category))].forEach(cat=>el('premiumCategory').add(new Option(cat,cat)));
+el('premiumCategory').addEventListener('change',refreshPremiumList);
+refreshPremiumList();
+function premiumSlotRects(n,layout){
+ const classic={
+  1:[[165,370,1035,1335]],
+  2:[[170,365,1030,760],[170,845,1030,1240]],
+  3:[[165,330,1035,625],[165,690,1035,985],[165,1050,1035,1345]],
+  4:[[145,350,575,790],[625,350,1055,790],[145,855,575,1295],[625,855,1055,1295]]
+ };
+ const variants={
+  'Dynamisch versetzt':[[120,345,950,745],[255,805,1080,1210],[95,1100,575,1370],[610,1100,1090,1370]],
+  'Hauptfoto + Detail':[[165,340,1035,1100],[580,1030,1070,1370],[130,1050,550,1350],[370,950,810,1250]],
+  'Asymmetrische Collage':[[115,350,715,990],[735,385,1080,770],[620,825,1080,1330],[130,1030,585,1340]],
+  'Fine Art Bogen':[[175,335,1025,1295],[665,850,1080,1320],[135,900,575,1320],[380,380,820,790]],
+  'Oval & Editorial':[[175,330,1025,1130],[640,950,1070,1340],[120,955,555,1330],[360,425,820,870]]
+ };
+ return (layout==='Klassisch'?classic[n]:variants[layout].slice(0,n));
+}
+function premiumText(t,y,size,color){
+ t=String(t||'').trim();if(!t)return;
+ ctx.font='bold '+size+'px Georgia, serif';ctx.textAlign='center';
+ while(ctx.measureText(t).width>1040&&size>22){size-=2;ctx.font='bold '+size+'px Georgia, serif'}
+ ctx.fillStyle=color;ctx.fillText(t.slice(0,100),600,y);
+}
+function drawPremiumStudio(){
+ const W=1200,H=1800,idx=Number(el('premiumTemplate').value),item=premiumCatalog[idx];
+ if(!item)return;
+ const bg=premiumImage(item.src);
+ ctx.fillStyle=item.dark?'#111a28':'#f5eee4';ctx.fillRect(0,0,W,H);
+ if(bg.complete&&bg.naturalWidth)ctx.drawImage(bg,0,0,W,H);
+ // Desktop Studio 3.8 deckt vorhandene, flache Fotofelder im Hintergrund ab.
+ const tone=item.dark?'#0d1523':'#fcf4e8';
+ if(item.category!=='KI-Vorlagen'&&item.category!=='Portrait & Akt'){
+  ctx.fillStyle=tone;ctx.fillRect(105,305,990,1080);
+ }
+ const count=Number(el('premiumCount').value),arr=el('premiumArrangement').value;
+ const rects=premiumSlotRects(count,arr);
+ rects.forEach(([x1,y1,x2,y2],i)=>{
+  const w=x2-x1,h=y2-y1,photo=premiumPhotos[i]||(i===0?baseImage:null);
+  ctx.save();ctx.fillStyle=item.dark?'#30394b':'#e4dfda';ctx.fillRect(x1,y1,w,h);
+  if(photo){
+   const fit=Math.min(w/photo.width,h/photo.height),pw=photo.width*fit,ph=photo.height*fit;
+   ctx.drawImage(photo,x1+(w-pw)/2,y1+(h-ph)/2,pw,ph);
+  }else{ctx.fillStyle=item.dark?'#e8c47c':'#766c60';ctx.textAlign='center';ctx.font='bold 32px sans-serif';ctx.fillText('FOTO '+(i+1),x1+w/2,y1+h/2)}
+  ctx.strokeStyle='#6d431c';ctx.lineWidth=12;ctx.strokeRect(x1-6,y1-6,w+12,h+12);
+  ctx.strokeStyle='#ffd887';ctx.lineWidth=4;ctx.strokeRect(x1-13,y1-13,w+26,h+26);
+  ctx.restore();
+ });
+ // Gleicher separater Beschriftungsbereich wie beim Windows-Design-Studio.
+ ctx.fillStyle=item.dark?'#0a111e':'#fdf5ea';ctx.fillRect(0,1375,W,425);
+ ctx.strokeStyle='#e7b353';ctx.lineWidth=4;ctx.strokeRect(118,1390,964,352);
+ const color=item.dark?'#ffdfaa':'#583720';
+ premiumText(el('studioEvent').value,1495,69,color);
+ ctx.strokeStyle='#e5b75c';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(330,1510);ctx.lineTo(870,1510);ctx.stroke();
+ premiumText([el('studioPerson').value,el('studioExtra').value].filter(Boolean).join(' · '),1590,55,color);
+ premiumText(el('studioDate').value||el('studioNumber').value,1685,38,color);
+ if(logoImage){const scale=Number(el('studioScale').value)/100,size=W*scale,r=Math.min(size/logoImage.width,size/logoImage.height);ctx.drawImage(logoImage,870,1420,logoImage.width*r,logoImage.height*r)}
+ savedBlob=null;savedFile=null;
+}
+function renderPremiumButtons(){
+ const wrap=el('premiumPhotoButtons');wrap.replaceChildren();
+ for(let i=0;i<Number(el('premiumCount').value);i++){
+  const b=document.createElement('button');b.textContent='📷 Foto '+(i+1)+(premiumPhotos[i]?' ✓':'');
+  b.onclick=()=>{premiumSelectedSlot=i;el('premiumPhotos').multiple=false;el('premiumPhotos').click()};wrap.appendChild(b);
+ }
+ const multi=document.createElement('button');multi.textContent='＋ Mehrere Fotos auswählen';multi.onclick=()=>{premiumSelectedSlot=0;el('premiumPhotos').multiple=true;el('premiumPhotos').click()};wrap.appendChild(multi);
+}
+el('premiumPhotos').onchange=async e=>{
+ const files=[...e.target.files].filter(f=>f.type.startsWith('image/'));
+ for(let i=0;i<files.length&&premiumSelectedSlot+i<4;i++){
+  try{premiumPhotos[premiumSelectedSlot+i]=await readImage(files[i])}catch(err){premiumStatus(err.message)}
+ }
+ e.target.value='';renderPremiumButtons();drawSafe();premiumStatus('Fotos geladen. Fertigbild prüfen und anschließend speichern oder teilen.');
+};
+el('premiumCount').addEventListener('change',()=>{renderPremiumButtons();drawSafe()});
+el('premiumArrangement').addEventListener('change',drawSafe);
+el('premiumTemplate').addEventListener('change',()=>{
+ const v=el('premiumTemplate').value;
+ if(v)premiumImage(premiumCatalog[Number(v)].src);
+ premiumStatus(v?'Design: '+premiumCatalog[Number(v)].name:'Bisheriges iPhone-Studio ausgewählt.');
+ drawSafe();
+});
+const premiumOldPhotoChange=el('studioPhotoFile').onchange;
+el('studioPhotoFile').onchange=async e=>{
+ await premiumOldPhotoChange(e);
+ if(el('premiumTemplate').value&&baseImage){premiumPhotos[0]=baseImage;renderPremiumButtons();drawSafe()}
+};
+const premiumOldReset=el('studioReset').onclick;
+el('studioReset').onclick=()=>{premiumPhotos.fill(null);premiumOldReset();renderPremiumButtons()};
+renderPremiumButtons();
 drawStudio();
 })();
 </script>
