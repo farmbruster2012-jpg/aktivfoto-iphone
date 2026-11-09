@@ -358,7 +358,7 @@ function drawPremiumStudio(){
  const rects=premiumSlotRects(count,arr);
  rects.forEach(([x1,y1,x2,y2],i)=>{
   const w=x2-x1,h=y2-y1,photo=premiumPhotos[i]||(i===0?baseImage:null);
-  ctx.save();ctx.fillStyle=item.dark?'#30394b':'#e4dfda';ctx.fillRect(x1,y1,w,h);
+  ctx.save();ctx.fillStyle=item.dark?'#182536':'#f4e9da';ctx.fillRect(x1,y1,w,h);
   if(photo){
    // Event-Profi-Darstellung: Original immer vollstaendig, ohne Beschnitt.
    // Nur die seitliche Hintergrundfuellung darf vergroessert/unscharf sein.
@@ -366,9 +366,12 @@ function drawPremiumStudio(){
    const cover=Math.max(w/iw,h/ih),bw=iw*cover,bh=ih*cover;
    ctx.save();
    ctx.beginPath();ctx.rect(x1,y1,w,h);ctx.clip();
-   ctx.filter='blur(28px) brightness(0.66)';
+   ctx.filter='blur(32px) brightness(1.06) saturate(0.75)';
    ctx.drawImage(photo,x1+(w-bw)/2,y1+(h-bh)/2,bw,bh);
    ctx.filter='none';
+   // Dezente farbliche Einbindung der Seitenflächen in das gewählte Design.
+   ctx.fillStyle=item.dark?'rgba(15,30,50,0.28)':'rgba(255,242,222,0.38)';
+   ctx.fillRect(x1,y1,w,h);
    const fit=Math.min(w/iw,h/ih),pw=iw*fit,ph=ih*fit;
    ctx.shadowColor='rgba(0,0,0,.28)';ctx.shadowBlur=14;
    ctx.drawImage(photo,x1+(w-pw)/2,y1+(h-ph)/2,pw,ph);
